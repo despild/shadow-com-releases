@@ -9,7 +9,22 @@ A 3D desktop pet that reacts to your keyboard and mouse. Choose a cat, dog, T. r
 ## Download
 
 <!-- latest-release:start -->
-[Download the latest release](https://github.com/despild/shadow-com-releases/releases/latest)
+**Latest version [v1.2.7](https://github.com/despild/shadow-com-releases/releases/tag/v1.2.7)**
+
+| Platform | Download | Installation |
+| --- | --- | --- |
+| Windows | [Shadow-Com-Setup-1.2.7-x64.exe](https://github.com/despild/shadow-com-releases/releases/download/v1.2.7/Shadow-Com-Setup-1.2.7-x64.exe) | Run the installer. |
+| macOS 13 or later · Apple Silicon | [Shadow-Com-1.2.7-mac-arm64.zip](https://github.com/despild/shadow-com-releases/releases/download/v1.2.7/Shadow-Com-1.2.7-mac-arm64.zip) | Unzip and move the app to Applications. |
+| macOS 13 or later · Intel | [Shadow-Com-1.2.7-mac-x64.zip](https://github.com/despild/shadow-com-releases/releases/download/v1.2.7/Shadow-Com-1.2.7-mac-x64.zip) | Unzip and move the app to Applications. |
+| Ubuntu | [shadow-com_1.2.7_amd64.deb](https://github.com/despild/shadow-com-releases/releases/download/v1.2.7/shadow-com_1.2.7_amd64.deb) | Install the DEB package. |
+
+### What’s new
+
+- On Ubuntu, select **App key connections → Enable Ubuntu app accessibility** once. From your next login, you can open Chrome normally.
+- If keys still do not appear in a Chrome window you already had open, visit `chrome://accessibility/` in a new tab and enable **Native accessibility API support** and **Web accessibility**. You can close the tab and keep working in your document.
+- On Ubuntu X11, address-bar and document key mapping and password-field protection were verified in a fresh login session and in an already running browser.
+
+[All releases](https://github.com/despild/shadow-com-releases/releases)
 <!-- latest-release:end -->
 
 Each release lists SHA-256 checksums for the installers. The Windows installer is unsigned. The Mac app is ad-hoc signed and has not been notarized by Apple.
