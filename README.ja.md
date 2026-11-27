@@ -9,7 +9,22 @@
 ## ダウンロード
 
 <!-- latest-release:start -->
-[最新版をダウンロード](https://github.com/despild/shadow-com-releases/releases/latest)
+**最新バージョン [v1.2.7](https://github.com/despild/shadow-com-releases/releases/tag/v1.2.7)**
+
+| OS | ダウンロード | インストール方法 |
+| --- | --- | --- |
+| Windows | [Shadow-Com-Setup-1.2.7-x64.exe](https://github.com/despild/shadow-com-releases/releases/download/v1.2.7/Shadow-Com-Setup-1.2.7-x64.exe) | インストーラーを実行します。 |
+| macOS 13以降 · Apple Silicon | [Shadow-Com-1.2.7-mac-arm64.zip](https://github.com/despild/shadow-com-releases/releases/download/v1.2.7/Shadow-Com-1.2.7-mac-arm64.zip) | ZIPを展開し、アプリをアプリケーションフォルダに移動します。 |
+| macOS 13以降 · Intel | [Shadow-Com-1.2.7-mac-x64.zip](https://github.com/despild/shadow-com-releases/releases/download/v1.2.7/Shadow-Com-1.2.7-mac-x64.zip) | ZIPを展開し、アプリをアプリケーションフォルダに移動します。 |
+| Ubuntu | [shadow-com_1.2.7_amd64.deb](https://github.com/despild/shadow-com-releases/releases/download/v1.2.7/shadow-com_1.2.7_amd64.deb) | DEBパッケージをインストールします。 |
+
+### このバージョンの変更点
+
+- Ubuntuでは、ウィジェット設定の **アプリのキー接続 → Ubuntu のアプリのアクセシビリティを有効にする** を一度押すと、次回のログインから普段どおりChromeを起動できます。
+- 起動中のChromeでまだキーが表示されない場合は、新しいタブで `chrome://accessibility/` を開き、**Native accessibility API support** と **Web accessibility** をオンにします。そのタブを閉じて元の文書で作業を続けられます。
+- Ubuntu X11の新しいログインセッションと起動中のブラウザーで、アドレスバーと文書編集欄のキーマッピング、パスワード入力時の保護を確認しました。
+
+[すべてのリリースを見る](https://github.com/despild/shadow-com-releases/releases)
 <!-- latest-release:end -->
 
 各リリースにはインストーラーごとのSHA-256が記載されています。Windows版のインストーラーは未署名です。Mac版はアドホック署名されており、Appleの公証は受けていません。
