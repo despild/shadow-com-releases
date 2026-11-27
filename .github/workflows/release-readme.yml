@@ -2,6 +2,8 @@ name: Update release README
 on:
   release:
     types: [published, released, edited, deleted, unpublished]
+  push:
+    paths: ['docs/release-notes.json']
   workflow_dispatch:
 
 permissions:
@@ -12,69 +14,105 @@ concurrency:
 
 jobs:
   update:
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
-      - name: Refresh the latest stable downloads and release notes
+      - name: Refresh downloads and release notes in each language
         uses: actions/github-script@v8
         with:
           script: |
             const { owner, repo } = context.repo;
             const branch = context.payload.repository.default_branch;
-            const path = 'README.md';
             const begin = '<!-- latest-release:start -->';
             const end = '<!-- latest-release:end -->';
-            const platforms = [
-              [/\.exe$/i, 'Windows', '설치 프로그램을 실행하세요.'],
-              [/mac-arm64\.zip$/i, 'macOS 13 이상 · Apple Silicon', 'ZIP을 풀고 앱을 응용 프로그램 폴더로 옮기세요.'],
-              [/mac-x64\.zip$/i, 'macOS 13 이상 · Intel', 'ZIP을 풀고 앱을 응용 프로그램 폴더로 옮기세요.'],
-              [/\.deb$/i, 'Ubuntu', 'DEB 패키지를 설치하세요.']
-            ];
+            const copy = {
+              ko: {
+                file: 'README.md', latest: '최신 버전', empty: '아직 공개된 정식 버전이 없습니다.',
+                columns: '| 운영체제 | 설치 파일 | 설치 방법 |', mac: 'macOS 13 이상',
+                windows: '설치 프로그램을 실행하세요.', zip: 'ZIP을 풀고 앱을 응용 프로그램 폴더로 옮기세요.',
+                deb: 'DEB 패키지를 설치하세요.', downloads: '설치 파일 보기',
+                changes: '이번 버전의 변경 사항', all: '모든 릴리스 보기'
+              },
+              en: {
+                file: 'README.en.md', latest: 'Latest version', empty: 'A stable release is not available yet.',
+                columns: '| Platform | Download | Installation |', mac: 'macOS 13 or later',
+                windows: 'Run the installer.', zip: 'Unzip and move the app to Applications.',
+                deb: 'Install the DEB package.', downloads: 'View available downloads',
+                changes: 'What’s new', notes: 'Read the release notes', all: 'All releases'
+              },
+              ja: {
+                file: 'README.ja.md', latest: '最新バージョン', empty: '正式版の公開をお待ちください。',
+                columns: '| OS | ダウンロード | インストール方法 |', mac: 'macOS 13以降',
+                windows: 'インストーラーを実行します。', zip: 'ZIPを展開し、アプリをアプリケーションフォルダに移動します。',
+                deb: 'DEBパッケージをインストールします。', downloads: '配布ファイルを見る',
+                changes: 'このバージョンの変更点', notes: 'リリースノートを読む', all: 'すべてのリリースを見る'
+              }
+            };
+            const read = async path => (await github.rest.repos.getContent({owner, repo, path, ref: branch})).data;
+            const decode = file => Buffer.from(file.content, 'base64').toString('utf8');
+            const catalog = JSON.parse(decode(await read('docs/release-notes.json')));
+            let release;
+            try {
+              release = (await github.rest.repos.getLatestRelease({owner, repo})).data;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
 
-            function releaseSection(release) {
-              if (!release) return '아직 공개된 정식 버전이 없습니다.';
-              const lines = [
-                `**최신 버전 [${release.tag_name}](${release.html_url})**`, '',
-                '| 운영체제 | 설치 파일 | 설치 방법 |', '| --- | --- | --- |'
+            function section(lang, text) {
+              if (!release) return text.empty;
+              const link = (label, url) => '[' + label + '](' + url + ')';
+              const lines = ['**' + text.latest + ' ' + link(release.tag_name, release.html_url) + '**', ''];
+              const platforms = [
+                [/\.exe$/i, 'Windows', text.windows],
+                [/mac-arm64\.zip$/i, text.mac + ' · Apple Silicon', text.zip],
+                [/mac-x64\.zip$/i, text.mac + ' · Intel', text.zip],
+                [/\.deb$/i, 'Ubuntu', text.deb]
               ];
-              for (const [pattern, platform, instructions] of platforms) {
+              const rows = [];
+              for (const [pattern, platform, install] of platforms) {
                 for (const asset of release.assets.filter(a => a.state === 'uploaded' && pattern.test(a.name))) {
-                  lines.push(`| ${platform} | [${asset.name}](${asset.browser_download_url}) | ${instructions} |`);
+                  rows.push('| ' + platform + ' | ' + link(asset.name, asset.browser_download_url) + ' | ' + install + ' |');
                 }
               }
-              if (lines.length === 4) lines.splice(2, 2, '설치 파일은 릴리스 페이지에서 확인하세요.');
-              const notes = (release.body || '').split(/^#{1,6}\s+SHA[- ]?256\b/im)[0].trim();
-              if (notes) lines.push('', '### 이번 버전의 변경 사항', '', notes);
-              lines.push('', `[모든 릴리스 보기](https://github.com/${owner}/${repo}/releases)`);
+              if (rows.length) lines.push(text.columns, '| --- | --- | --- |', ...rows);
+              else lines.push(link(text.downloads, release.html_url));
+              const original = (release.body || '').replace(/\r\n/g, '\n').split(/^#{1,6}\s+SHA[- ]?256\b/im)[0].trim();
+              if (original) {
+                const translations = catalog[release.tag_name];
+                const bullets = items => items?.map(item => '- ' + item).join('\n');
+                const translated = bullets(translations?.ko) === original && bullets(translations[lang]);
+                lines.push('', '### ' + text.changes, '', lang === 'ko' ? original : translated || link(text.notes, release.html_url));
+              }
+              lines.push('', link(text.all, 'https://github.com/' + owner + '/' + repo + '/releases'));
               return lines.join('\n');
             }
 
-            for (let attempt = 1; attempt <= 3; attempt++) {
-              const file = (await github.rest.repos.getContent({owner, repo, path, ref: branch})).data;
-              const before = Buffer.from(file.content, 'base64').toString('utf8');
-              const start = before.indexOf(begin);
-              const finish = before.indexOf(end);
-              if (start < 0 || finish < start || start !== before.lastIndexOf(begin) || finish !== before.lastIndexOf(end)) {
-                throw new Error('README release markers are missing or duplicated.');
-              }
-              let latest;
-              try {
-                latest = (await github.rest.repos.getLatestRelease({owner, repo})).data;
-              } catch (error) {
-                if (error.status !== 404) throw error;
-              }
-              const section = releaseSection(latest);
-              if (section.includes(begin) || section.includes(end)) throw new Error('Release notes contain a README marker.');
-              const after = before.slice(0, start + begin.length) + '\n' + section + '\n' + before.slice(finish);
-              if (after === before) {
-                core.info('README is already current.');
-                return;
-              }
-              try {
-                await github.rest.repos.createOrUpdateFileContents({owner, repo, path, branch, sha: file.sha,
-                  message: `Update downloads in README${latest ? ' for ' + latest.tag_name : ''}`,
-                  content: Buffer.from(after).toString('base64')});
-                return;
-              } catch (error) {
-                if (error.status !== 409 || attempt === 3) throw error;
+            for (const [lang, text] of Object.entries(copy)) {
+              const path = text.file;
+              const block = section(lang, text);
+              if (block.includes(begin) || block.includes(end)) throw new Error('Release notes contain a README marker.');
+              for (let attempt = 1; attempt <= 3; attempt++) {
+                const file = await read(path);
+                const before = decode(file);
+                const start = before.indexOf(begin);
+                const finish = before.indexOf(end);
+                if (start < 0 || finish < start || start !== before.lastIndexOf(begin) || finish !== before.lastIndexOf(end)) {
+                  throw new Error(path + ': missing or duplicated release markers');
+                }
+                const after = before.slice(0, start + begin.length) + '\n' + block + '\n' + before.slice(finish);
+                if (after === before) {
+                  core.info(path + ' is up to date.');
+                  break;
+                }
+                try {
+                  await github.rest.repos.createOrUpdateFileContents({
+                    owner, repo, path, branch, sha: file.sha,
+                    message: 'Refresh downloads in ' + path + (release ? ' for ' + release.tag_name : ''),
+                    content: Buffer.from(after).toString('base64')
+                  });
+                  break;
+                } catch (error) {
+                  if (error.status !== 409 || attempt === 3) throw error;
+                }
               }
             }
